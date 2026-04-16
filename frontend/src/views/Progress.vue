@@ -6,6 +6,8 @@ import { PieChart, BarChart } from 'echarts/charts'
 import { GridComponent, TooltipComponent, LegendComponent, TitleComponent } from 'echarts/components'
 import VChart from 'vue-echarts'
 import request from '../api/request.js'
+import ComicCard from '../components/comic/ComicCard.vue'
+import ComicBadge from '../components/comic/ComicBadge.vue'
 
 use([CanvasRenderer, PieChart, BarChart, GridComponent, TooltipComponent, LegendComponent, TitleComponent])
 
@@ -53,54 +55,48 @@ const masteryOption = computed(() => ({
 </script>
 
 <template>
-  <div>
-    <h2>学习进度</h2>
-    <el-row :gutter="16" style="margin-top: 16px;">
-      <el-col :xs="12" :sm="8" :md="4">
-        <el-card shadow="hover">
-          <div style="font-size: 22px; font-weight: 600;">{{ progress.total }}</div>
-          <div style="color: #6b7280; font-size: 13px;">总词量</div>
-        </el-card>
-      </el-col>
-      <el-col :xs="12" :sm="8" :md="4">
-        <el-card shadow="hover">
-          <div style="font-size: 22px; font-weight: 600;">{{ progress.new }}</div>
-          <div style="color: #6b7280; font-size: 13px;">未学习</div>
-        </el-card>
-      </el-col>
-      <el-col :xs="12" :sm="8" :md="4">
-        <el-card shadow="hover">
-          <div style="font-size: 22px; font-weight: 600;">{{ progress.learning }}</div>
-          <div style="color: #6b7280; font-size: 13px;">学习中</div>
-        </el-card>
-      </el-col>
-      <el-col :xs="12" :sm="8" :md="4">
-        <el-card shadow="hover">
-          <div style="font-size: 22px; font-weight: 600;">{{ progress.mastered }}</div>
-          <div style="color: #6b7280; font-size: 13px;">已掌握</div>
-        </el-card>
-      </el-col>
-      <el-col :xs="12" :sm="8" :md="4">
-        <el-card shadow="hover">
-          <div style="font-size: 22px; font-weight: 600;">{{ progress.familiar }}</div>
-          <div style="color: #6b7280; font-size: 13px;">熟知</div>
-        </el-card>
-      </el-col>
-    </el-row>
+  <div class="space-y-6">
+    <div class="flex items-center gap-3">
+      <h2 class="font-black text-2xl uppercase tracking-wide text-[#1a1a1a] md:text-4xl">学习进度</h2>
+      <ComicBadge variant="success">WOW!</ComicBadge>
+    </div>
 
-    <el-row :gutter="16" style="margin-top: 20px;">
-      <el-col :xs="24" :md="12">
-        <el-card>
-          <template #header>单词状态分布</template>
-          <v-chart :option="statusOption" style="height: 300px;" />
-        </el-card>
-      </el-col>
-      <el-col :xs="24" :md="12">
-        <el-card>
-          <template #header>熟练度分布</template>
-          <v-chart :option="masteryOption" style="height: 300px;" />
-        </el-card>
-      </el-col>
-    </el-row>
+    <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
+      <ComicCard hoverable>
+        <div class="text-3xl font-black text-[#1a1a1a]">{{ progress.total }}</div>
+        <div class="text-sm font-bold text-[#1a1a1a]/80">总词量</div>
+      </ComicCard>
+      <ComicCard hoverable>
+        <div class="text-3xl font-black text-[#3a86ff]">{{ progress.new }}</div>
+        <div class="text-sm font-bold text-[#1a1a1a]/80">未学习</div>
+      </ComicCard>
+      <ComicCard hoverable>
+        <div class="text-3xl font-black text-[#ffbe0b]">{{ progress.learning }}</div>
+        <div class="text-sm font-bold text-[#1a1a1a]/80">学习中</div>
+      </ComicCard>
+      <ComicCard hoverable>
+        <div class="text-3xl font-black text-[#06ffa5]">{{ progress.mastered }}</div>
+        <div class="text-sm font-bold text-[#1a1a1a]/80">已掌握</div>
+      </ComicCard>
+      <ComicCard hoverable>
+        <div class="text-3xl font-black text-[#ff006e]">{{ progress.familiar }}</div>
+        <div class="text-sm font-bold text-[#1a1a1a]/80">熟知</div>
+      </ComicCard>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <ComicCard>
+        <template #header>
+          <span class="font-black text-lg uppercase tracking-wide">单词状态分布</span>
+        </template>
+        <v-chart :option="statusOption" class="h-72" />
+      </ComicCard>
+      <ComicCard>
+        <template #header>
+          <span class="font-black text-lg uppercase tracking-wide">熟练度分布</span>
+        </template>
+        <v-chart :option="masteryOption" class="h-72" />
+      </ComicCard>
+    </div>
   </div>
 </template>

@@ -3,8 +3,13 @@ import { ref, onMounted, computed } from 'vue'
 import request from '../api/request.js'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
+import { useAppStore } from '../stores/app.js'
+import ComicButton from '../components/comic/ComicButton.vue'
+import ComicPanel from '../components/comic/ComicPanel.vue'
+import ComicBadge from '../components/comic/ComicBadge.vue'
 
 const router = useRouter()
+const store = useAppStore()
 const queue = ref([])
 const currentIndex = ref(0)
 const showMeaning = ref(false)
@@ -12,8 +17,12 @@ const loading = ref(false)
 const finished = ref(false)
 const stats = ref({ review_count: 0, new_count: 0 })
 const testLoading = ref(false)
+const currentBookName = computed(() => store.currentBookTag || '全部词库')
 
-onMounted(loadQueue)
+onMounted(async () => {
+  await store.loadCurrentBook()
+  await loadQueue()
+})
 
 async function loadQueue() {
   loading.value = true
@@ -79,57 +88,63 @@ async function startTest() {
 </script>
 
 <template>
-  <div>
-    <h2>今日学习</h2>
-    <p v-if="loading" style="color: #6b7280; margin-top: 12px;">加载中...</p>
-    <div v-else-if="finished" style="text-align: center; margin-top: 40px;">
-      <el-result icon="success" title="今日学习完成" sub-title="继续保持，积少成多">
-        <template #extra>
-          <el-button type="primary" :loading="testLoading" @click="startTest">开始今日测试</el-button>
-          <el-button @click="router.push('/')">返回概览</el-button>
-        </template>
-      </el-result>
+  <div class="space-y-4">
+    <div class="flex items-center gap-3">
+      <h2 class="font-black text-2xl uppercase tracking-wide text-[#1a1a1a] md:text-4xl">今日学习</h2>
+      <ComicBadge variant="warning">GO!</ComicBadge>
     </div>
-    <div v-else-if="!current" style="color: #6b7280; margin-top: 20px;">
+
+    <p v-if="loading" class="py-8 text-center font-black text-[#1a1a1a]">加载中...</p>
+
+    <div v-else-if="finished" class="py-10">
+      <ComicPanel action-lines class="mx-auto max-w-xl text-center">
+        <div class="mb-2 text-6xl">🎉</div>
+        <div class="font-black text-3xl uppercase tracking-wide text-[#1a1a1a]">今日学习完成</div>
+        <div class="mt-2 font-bold text-[#1a1a1a]/80">继续保持，积少成多</div>
+        <div class="mt-6 flex justify-center gap-3">
+          <ComicButton variant="primary" size="lg" :loading="testLoading" @click="startTest">开始今日测试</ComicButton>
+          <ComicButton variant="light" size="lg" @click="router.push('/')">返回概览</ComicButton>
+        </div>
+      </ComicPanel>
+    </div>
+
+    <div v-else-if="!current" class="py-10 text-center font-black text-[#1a1a1a]">
       今日暂无学习任务，去休息一下吧 ~
     </div>
-    <div v-else>
-      <div style="display: flex; justify-content: space-between; align-items: center; margin: 12px 0; color: #6b7280;">
-        <span>{{ progressText }}</span>
-        <span>复习 {{ stats.review_count }} · 新词 {{ stats.new_count }}</span>
+
+    <div v-else class="space-y-4">
+      <div class="flex items-center justify-between">
+        <ComicBadge variant="secondary">{{ progressText }}</ComicBadge>
+        <div class="font-bold text-[#1a1a1a]">词库: {{ currentBookName }} · 复习 {{ stats.review_count }} · 新词 {{ stats.new_count }}</div>
       </div>
 
-      <el-card style="max-width: 720px; min-height: 320px; display: flex; flex-direction: column; justify-content: space-between;">
-        <div>
-          <div style="text-align: center; padding-top: 20px;">
-            <div style="font-size: 36px; font-weight: 600;">{{ current.word }}</div>
-            <div style="color: #6b7280; margin-top: 8px; font-size: 16px;">{{ current.phonetic || '' }}</div>
+      <ComicPanel class="mx-auto max-w-3xl">
+        <div class="text-center">
+          <div class="font-black text-5xl uppercase tracking-wide text-[#1a1a1a] md:text-7xl">{{ current.word }}</div>
+          <div class="mt-3 font-bold text-lg text-[#1a1a1a]/70">{{ current.phonetic || '' }}</div>
 
-            <!-- 新词模式：直接展示释义 -->
-            <div v-if="current.is_new" style="margin-top: 30px; font-size: 18px; color: #333; line-height: 1.6;">
-              <div>{{ current.meaning_zh || '-' }}</div>
-              <div style="margin-top: 10px; color: #888; font-size: 15px;">{{ current.example || '' }}</div>
+          <div v-if="current.is_new" class="mt-8 space-y-3">
+            <div class="font-black text-xl text-[#1a1a1a] md:text-2xl">{{ current.meaning_zh || '-' }}</div>
+            <div class="font-bold text-[#1a1a1a]/60">{{ current.example || '' }}</div>
+          </div>
+
+          <div v-else class="mt-8">
+            <div v-if="!showMeaning">
+              <ComicButton variant="secondary" size="lg" @click="revealMeaning">显示释义</ComicButton>
             </div>
-
-            <!-- 复习模式：先隐藏释义 -->
-            <div v-else style="margin-top: 30px;">
-              <div v-if="!showMeaning">
-                <el-button text type="primary" size="large" @click="revealMeaning">显示释义</el-button>
-              </div>
-              <div v-else style="font-size: 18px; color: #333; line-height: 1.6;">
-                <div>{{ current.meaning_zh || '-' }}</div>
-                <div style="margin-top: 10px; color: #888; font-size: 15px;">{{ current.example || '' }}</div>
-              </div>
+            <div v-else class="space-y-3">
+              <div class="font-black text-xl text-[#1a1a1a] md:text-2xl">{{ current.meaning_zh || '-' }}</div>
+              <div class="font-bold text-[#1a1a1a]/60">{{ current.example || '' }}</div>
             </div>
           </div>
         </div>
+      </ComicPanel>
 
-        <div style="margin-top: 30px; display: flex; gap: 12px; justify-content: center;">
-          <el-button size="large" type="success" @click="grade('know')" style="min-width: 100px;">认识</el-button>
-          <el-button size="large" type="warning" @click="grade('vague')" style="min-width: 100px;">模糊</el-button>
-          <el-button size="large" type="danger" @click="grade('forget')" style="min-width: 100px;">不认识</el-button>
-        </div>
-      </el-card>
+      <div class="flex flex-wrap justify-center gap-4">
+        <ComicButton variant="success" size="lg" @click="grade('know')">认识</ComicButton>
+        <ComicButton variant="warning" size="lg" @click="grade('vague')">模糊</ComicButton>
+        <ComicButton variant="danger" size="lg" @click="grade('forget')">不认识</ComicButton>
+      </div>
     </div>
   </div>
 </template>

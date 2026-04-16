@@ -34,6 +34,16 @@ def get_or_create_user_settings(db: Session, email: str = DEFAULT_EMAIL) -> User
     return setting
 
 
+def get_user_books(db: Session, user_id: int) -> list[dict]:
+    results = (
+        db.query(VocabItem.tags, func.count(VocabItem.id))
+        .filter(VocabItem.user_id == user_id, VocabItem.tags.isnot(None))
+        .group_by(VocabItem.tags)
+        .all()
+    )
+    return [{"tag": tag, "count": count} for tag, count in results]
+
+
 def import_json_lines(db: Session, file_paths: list[str], email: str = DEFAULT_EMAIL) -> dict:
     user = get_or_create_user(db, email)
     imported = 0

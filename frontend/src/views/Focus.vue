@@ -2,6 +2,9 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import request from '../api/request.js'
 import { ElMessage } from 'element-plus'
+import ComicCard from '../components/comic/ComicCard.vue'
+import ComicButton from '../components/comic/ComicButton.vue'
+import ComicBadge from '../components/comic/ComicBadge.vue'
 
 const duration = ref(25)
 const timeLeft = ref(25 * 60)
@@ -87,6 +90,10 @@ async function complete() {
   ElMessage.success('专注完成！')
 }
 
+function stopTimer() {
+  if (timer.value) clearInterval(timer.value)
+}
+
 function playNoise() {
   if (!currentNoise.value) return
   if (!audio.value) audio.value = new Audio()
@@ -98,36 +105,40 @@ function playNoise() {
 </script>
 
 <template>
-  <div>
-    <h2>专注计时</h2>
-    <el-card style="max-width: 480px; margin-top: 16px; text-align: center;">
-      <div style="font-size: 64px; font-weight: 600; letter-spacing: 2px;">{{ displayTime }}</div>
-      <div style="margin-top: 16px; display: flex; gap: 10px; justify-content: center;">
-        <el-button type="primary" size="large" @click="start" :disabled="isRunning">开始</el-button>
-        <el-button size="large" @click="pause" :disabled="!isRunning">暂停</el-button>
-        <el-button size="large" @click="stop" :disabled="!focusSessionId">结束</el-button>
+  <div class="space-y-4">
+    <div class="flex items-center gap-3">
+      <h2 class="font-black text-2xl uppercase tracking-wide text-[#1a1a1a] md:text-4xl">专注计时</h2>
+      <ComicBadge variant="primary">ZOOM!</ComicBadge>
+    </div>
+
+    <ComicCard class="mx-auto max-w-xl text-center">
+      <div class="py-6 font-black text-6xl tracking-wider text-[#1a1a1a] md:text-8xl">{{ displayTime }}</div>
+      <div class="flex flex-wrap justify-center gap-3">
+        <ComicButton variant="success" size="lg" :disabled="isRunning" @click="start">开始</ComicButton>
+        <ComicButton variant="warning" size="lg" :disabled="!isRunning" @click="pause">暂停</ComicButton>
+        <ComicButton variant="danger" size="lg" :disabled="!focusSessionId" @click="stop">结束</ComicButton>
       </div>
 
-      <div style="margin-top: 24px; text-align: left;">
-        <div style="margin-bottom: 10px;">
-          <span>时长（分钟）</span>
+      <div class="mt-8 space-y-5 text-left">
+        <div>
+          <div class="mb-2 font-bold">时长（分钟）: {{ duration }}</div>
           <el-slider v-model="duration" :min="5" :max="120" :step="5" show-stops :disabled="isRunning" />
         </div>
-        <div style="margin-bottom: 10px;">
-          <span>关联任务</span>
-          <el-select v-model="taskId" placeholder="选择任务（可选）" style="width: 100%; margin-top: 6px;" :disabled="isRunning">
+        <div>
+          <div class="mb-2 font-bold">关联任务</div>
+          <el-select v-model="taskId" placeholder="选择任务（可选）" class="w-full" :disabled="isRunning">
             <el-option label="无" :value="null" />
             <el-option v-for="t in tasks" :key="t.id" :label="t.title" :value="t.id" />
           </el-select>
         </div>
         <div>
-          <span>白噪音</span>
-          <el-select v-model="currentNoise" placeholder="选择白噪音" style="width: 100%; margin-top: 6px;">
+          <div class="mb-2 font-bold">白噪音</div>
+          <el-select v-model="currentNoise" placeholder="选择白噪音" class="w-full">
             <el-option label="无" :value="null" />
             <el-option v-for="n in whiteNoises" :key="n.url" :label="n.name" :value="n.url" />
           </el-select>
         </div>
       </div>
-    </el-card>
+    </ComicCard>
   </div>
 </template>

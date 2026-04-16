@@ -3,6 +3,9 @@ import { ref, onMounted } from 'vue'
 import request from '../api/request.js'
 import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
+import ComicCard from '../components/comic/ComicCard.vue'
+import ComicButton from '../components/comic/ComicButton.vue'
+import ComicBadge from '../components/comic/ComicBadge.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -65,38 +68,51 @@ async function submit() {
 </script>
 
 <template>
-  <div>
-    <h2>{{ isDailyTest ? '今日测试' : '练习模式' }}</h2>
-    <div v-if="!isDailyTest" style="display: flex; gap: 10px; margin: 16px 0; align-items: center;">
-      <el-select v-model="mode" style="width: 120px;">
+  <div class="space-y-4">
+    <div class="flex items-center gap-3">
+      <h2 class="font-black text-2xl uppercase tracking-wide text-[#1a1a1a] md:text-4xl">{{ isDailyTest ? '今日测试' : '练习模式' }}</h2>
+      <ComicBadge variant="primary">POW!</ComicBadge>
+    </div>
+
+    <div v-if="!isDailyTest" class="flex flex-wrap items-center gap-3">
+      <el-select v-model="mode" class="w-32">
         <el-option label="选择题" value="mcq" />
         <el-option label="拼写题" value="spelling" />
       </el-select>
-      <el-input-number v-model="count" :min="1" :max="50" style="width: 120px;" />
-      <el-button type="primary" @click="generate" :loading="loading">生成题目</el-button>
+      <el-input-number v-model="count" :min="1" :max="50" class="w-32" />
+      <ComicButton variant="primary" :loading="loading" @click="generate">生成题目</ComicButton>
     </div>
 
-    <div v-if="questions.length">
-      <el-card v-for="(q, idx) in questions" :key="idx" style="margin-bottom: 12px; max-width: 720px;">
-        <div style="font-weight: 600; margin-bottom: 10px;">Q{{ idx + 1 }}. {{ q.prompt }}</div>
-        <div v-if="q.type === 'mcq'">
-          <el-radio-group v-model="q.user_answer">
-            <el-radio v-for="c in q.choices" :key="c" :label="c">{{ c }}</el-radio>
-          </el-radio-group>
+    <div v-if="questions.length" class="space-y-4">
+      <ComicCard v-for="(q, idx) in questions" :key="idx">
+        <div class="mb-3 font-black text-lg text-[#1a1a1a]">Q{{ idx + 1 }}. {{ q.prompt }}</div>
+        <div v-if="q.type === 'mcq'" class="flex flex-wrap gap-3">
+          <label
+            v-for="c in q.choices" :key="c"
+            class="flex cursor-pointer items-center gap-2 rounded-lg border-4 border-[#1a1a1a] bg-white px-4 py-2 font-bold shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]"
+            :class="{ 'bg-[#ffbe0b]': q.user_answer === c }"
+          >
+            <input v-model="q.user_answer" type="radio" :name="`q-${idx}`" :value="c" class="h-4 w-4 accent-[#1a1a1a]">
+            <span>{{ c }}</span>
+          </label>
         </div>
         <div v-else>
-          <el-input v-model="q.user_answer" placeholder="输入拼写" style="max-width: 300px;" />
+          <input v-model="q.user_answer" placeholder="输入拼写" class="w-full max-w-sm rounded-lg border-4 border-[#1a1a1a] px-4 py-2 font-bold shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] focus:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] focus:outline-none">
         </div>
-      </el-card>
-      <div style="display: flex; gap: 10px; margin-top: 8px;">
-        <el-button type="primary" @click="submit">提交{{ isDailyTest ? '测试' : '练习' }}</el-button>
-        <el-button v-if="isDailyTest" @click="router.push('/')">返回概览</el-button>
+      </ComicCard>
+
+      <div class="flex flex-wrap gap-3">
+        <ComicButton variant="primary" size="lg" @click="submit">提交{{ isDailyTest ? '测试' : '练习' }}</ComicButton>
+        <ComicButton v-if="isDailyTest" variant="light" size="lg" @click="router.push('/')">返回概览</ComicButton>
       </div>
     </div>
-    <div v-else-if="isDailyTest" style="color: #6b7280; margin-top: 20px;">
+
+    <div v-else-if="isDailyTest" class="py-8 text-center font-black text-[#1a1a1a]">
       暂无测试题目，先去完成今日学习吧 ~
     </div>
 
-    <el-alert v-if="result" :title="`正确 ${result.correct_count}/${result.total}，错误 ${result.wrong_count}`" type="info" show-icon style="margin-top: 16px; max-width: 720px;" />
+    <div v-if="result" class="rounded-lg border-4 border-[#1a1a1a] bg-[#fffef0] p-4 font-bold shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
+      正确 {{ result.correct_count }}/{{ result.total }}，错误 {{ result.wrong_count }}
+    </div>
   </div>
 </template>

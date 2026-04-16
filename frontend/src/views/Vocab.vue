@@ -1,59 +1,112 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import request from '../api/request.js'
 import { ElMessage } from 'element-plus'
+import { useAppStore } from '../stores/app.js'
+import ComicCard from '../components/comic/ComicCard.vue'
+import ComicButton from '../components/comic/ComicButton.vue'
+import ComicInput from '../components/comic/ComicInput.vue'
+import ComicBadge from '../components/comic/ComicBadge.vue'
 
+const store = useAppStore()
 const keyword = ref('')
 const vocab = ref({ total: 0, items: [], page: 1, page_size: 20 })
-const bookSelect = ref('all')
-const bookOptions = [
+const importBookSelect = ref('all')
+const importBookOptions = [
   { label: '全部导入', value: 'all' },
   { label: '四级单词 (CET4)', value: 'CET4luan_2.json' },
   { label: '六级单词 (CET6)', value: 'CET6_1.json' },
 ]
+const books = ref([])
 
-onMounted(() => loadVocab())
+const filterBookTag = computed({
+  get: () => store.currentBookTag || '',
+  set: (val) => { store.currentBookTag = val },
+})
+
+onMounted(async () => {
+  await loadBooks()
+  await loadVocab()
+})
+
+async function loadBooks() {
+  try {
+    const { data } = await request.get('/api/study/books')
+    books.value = data.data.books || []
+    store.currentBookTag = data.data.current_book_tag || ''
+  } catch (e) {}
+}
 
 async function loadVocab(page = 1) {
-  const { data } = await request.get(`/api/vocab/list?keyword=${encodeURIComponent(keyword.value)}&page=${page}&page_size=${vocab.value.page_size}`)
+  let url = `/api/vocab/list?keyword=${encodeURIComponent(keyword.value)}&page=${page}&page_size=${vocab.value.page_size}`
+  if (filterBookTag.value) {
+    url += `&book_tag=${encodeURIComponent(filterBookTag.value)}`
+  }
+  const { data } = await request.get(url)
   vocab.value = data.data
 }
 
 async function importWords() {
   let files = []
-  if (bookSelect.value === 'all') {
+  if (importBookSelect.value === 'all') {
     files = ['CET4luan_2.json', 'CET6_1.json']
   } else {
-    files = [bookSelect.value]
+    files = [importBookSelect.value]
   }
   await request.post('/api/vocab/import-json-files', { files })
   ElMessage.success('导入成功')
+  await loadBooks()
   await loadVocab()
+}
+
+async function saveCurrentBook() {
+  try {
+    await request.post('/api/study/current-book', {
+      current_book_tag: store.currentBookTag || null,
+    })
+    ElMessage.success('当前词库已更新')
+  } catch (e) {
+    ElMessage.error('保存失败')
+  }
 }
 </script>
 
 <template>
-  <div>
-    <h2>词库浏览</h2>
-    <div style="display: flex; gap: 10px; margin: 16px 0; flex-wrap: wrap; align-items: center;">
-      <el-input v-model="keyword" placeholder="搜索单词" style="max-width: 200px;" @keyup.enter="loadVocab(1)" />
-      <el-button @click="loadVocab(1)">搜索</el-button>
-      <el-select v-model="bookSelect" style="width: 160px;">
-        <el-option v-for="opt in bookOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-      </el-select>
-      <el-button type="primary" @click="importWords">导入词库</el-button>
+  <div class="space-y-4">
+    <div class="flex items-center gap-3">
+      <h2 class="font-black text-2xl uppercase tracking-wide text-[#1a1a1a] md:text-4xl">词库浏览</h2>
+      <ComicBadge variant="secondary">BOOM!</ComicBadge>
     </div>
 
-    <el-row :gutter="12">
-      <el-col :xs="24" :sm="12" :md="8" :lg="6" v-for="item in vocab.items" :key="item.id" style="margin-bottom: 12px;">
-        <el-card shadow="hover">
-          <div style="font-size: 18px; font-weight: 600;">{{ item.word }}</div>
-          <div style="color: #6b7280; font-size: 13px;">{{ item.phonetic || '' }}</div>
-          <div style="margin-top: 8px; color: #333;">{{ item.meaning_zh || '-' }}</div>
-          <div style="margin-top: 6px; color: #888; font-size: 12px;">{{ item.tags || '-' }}</div>
-        </el-card>
-      </el-col>
-    </el-row>
+    <div class="flex flex-wrap items-center gap-3">
+      <ComicInput v-model="keyword" placeholder="搜索单词" class="w-48" @enter="loadVocab(1)" />
+      <ComicButton variant="light" @click="loadVocab(1)">搜索</ComicButton>
+      <el-select v-model="filterBookTag" clearable placeholder="全部词库" class="w-44" @change="loadVocab(1)">
+        <el-option
+          v-for="b in books"
+          :key="b.tag"
+          :label="`${b.tag} (${b.count}词)`"
+          :value="b.tag"
+        />
+      </el-select>
+      <ComicButton variant="primary" @click="saveCurrentBook">设为当前词库</ComicButton>
+      <div class="flex-1"></div>
+      <el-select v-model="importBookSelect" class="w-40">
+        <el-option v-for="opt in importBookOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+      </el-select>
+      <ComicButton variant="warning" @click="importWords">导入词库</ComicButton>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <ComicCard v-for="item in vocab.items" :key="item.id" hoverable>
+        <div class="flex items-start justify-between">
+          <div class="font-black text-xl text-[#1a1a1a]">{{ item.word }}</div>
+          <ComicBadge v-if="item.tags" variant="dark" class="text-xs">{{ item.tags }}</ComicBadge>
+        </div>
+        <div class="mt-1 font-bold text-sm text-[#1a1a1a]/60">{{ item.phonetic || '' }}</div>
+        <div class="mt-3 font-bold text-[#1a1a1a]">{{ item.meaning_zh || '-' }}</div>
+      </ComicCard>
+    </div>
 
     <el-pagination
       v-if="vocab.total > 0"
@@ -63,7 +116,7 @@ async function importWords() {
       :page-size="vocab.page_size"
       :current-page="vocab.page"
       @current-change="loadVocab"
-      style="margin-top: 16px;"
+      class="mt-4"
     />
   </div>
 </template>

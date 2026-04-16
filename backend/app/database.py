@@ -14,6 +14,15 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
+def run_migrations():
+    from sqlalchemy import inspect, text
+    inspector = inspect(engine)
+    columns = [c["name"] for c in inspector.get_columns("user_settings")]
+    with engine.begin() as conn:
+        if "current_book_tag" not in columns:
+            conn.execute(text("ALTER TABLE user_settings ADD COLUMN current_book_tag VARCHAR(255)"))
+
+
 def get_db():
     db = SessionLocal()
     try:

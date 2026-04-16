@@ -134,6 +134,7 @@ class UserSetting(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), unique=True, index=True)
     daily_new_words: Mapped[int] = mapped_column(Integer, default=20)
     daily_review_limit: Mapped[int] = mapped_column(Integer, default=50)
+    current_book_tag: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 

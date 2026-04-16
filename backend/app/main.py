@@ -17,15 +17,16 @@ for p in (PROJECT_ROOT, BACKEND_ROOT):
     if str(p) not in sys.path:
         sys.path.insert(0, str(p))
 
-from app.database import Base, engine, get_db
-from app.models import PracticeAnswer, PracticeSession, ReviewLog, VocabItem, FocusSession, Task, DailyCheckin
-from app.services import get_or_create_user, import_json_lines
+from app.database import Base, engine, get_db, run_migrations
+from app.models import PracticeAnswer, PracticeSession, ReviewLog, VocabItem, FocusSession, Task, DailyCheckin, UserSetting
+from app.services import get_or_create_user, get_or_create_user_settings, import_json_lines
 from app.routers.study import get_today_queue, grade_word, GradeBody as StudyGradeBody
 from app.routers import checkin as checkin_router
 
 STATIC_DIR = PROJECT_ROOT / "frontend" / "dist"
 
 Base.metadata.create_all(bind=engine)
+run_migrations()
 
 app = FastAPI(title="AI Vocab Agent Python", version="1.2.0")
 app.add_middleware(
@@ -98,11 +99,14 @@ def list_vocab(
     page: int = 1,
     page_size: int = 20,
     keyword: str = "",
+    book_tag: str = "",
     user_email: str = "local@ai-vocab-agent.dev",
     db: Session = Depends(get_db),
 ):
     user = get_or_create_user(db, user_email)
     query = db.query(VocabItem).filter(VocabItem.user_id == user.id)
+    if book_tag.strip():
+        query = query.filter(VocabItem.tags == book_tag.strip())
     if keyword.strip():
         query = query.filter(VocabItem.word.contains(keyword.strip()))
 
@@ -172,7 +176,11 @@ def practice_generate(body: PracticeGenerateBody, db: Session = Depends(get_db))
         raise HTTPException(status_code=400, detail="Invalid mode")
 
     user = get_or_create_user(db, body.user_email)
-    words = db.query(VocabItem).filter(VocabItem.user_id == user.id).all()
+    setting = get_or_create_user_settings(db, body.user_email)
+    base_filters = [VocabItem.user_id == user.id]
+    if setting.current_book_tag:
+        base_filters.append(VocabItem.tags == setting.current_book_tag)
+    words = db.query(VocabItem).filter(and_(*base_filters)).all()
     if len(words) < 4:
         raise HTTPException(status_code=400, detail="Need at least 4 words")
 
@@ -266,13 +274,18 @@ def practice_submit(body: PracticeSubmitBody, db: Session = Depends(get_db)):
 @app.get("/api/stats/overview")
 def stats_overview(user_email: str = "local@ai-vocab-agent.dev", db: Session = Depends(get_db)):
     user = get_or_create_user(db, user_email)
+    setting = get_or_create_user_settings(db, user_email)
     now = datetime.utcnow()
     start = datetime(now.year, now.month, now.day)
 
-    vocab_count = db.query(VocabItem).filter(VocabItem.user_id == user.id).count()
+    base_filters = [VocabItem.user_id == user.id]
+    if setting.current_book_tag:
+        base_filters.append(VocabItem.tags == setting.current_book_tag)
+
+    vocab_count = db.query(VocabItem).filter(and_(*base_filters)).count()
     due_today = (
         db.query(VocabItem)
-        .filter(and_(VocabItem.user_id == user.id, or_(VocabItem.next_review_at.is_(None), VocabItem.next_review_at <= now)))
+        .filter(and_(*base_filters, or_(VocabItem.next_review_at.is_(None), VocabItem.next_review_at <= now)))
         .count()
     )
     today_reviewed = (
@@ -294,13 +307,18 @@ def stats_overview(user_email: str = "local@ai-vocab-agent.dev", db: Session = D
 @app.get("/api/stats/dashboard")
 def stats_dashboard(user_email: str = "local@ai-vocab-agent.dev", db: Session = Depends(get_db)):
     user = get_or_create_user(db, user_email)
+    setting = get_or_create_user_settings(db, user_email)
     now = datetime.utcnow()
     today_start = datetime(now.year, now.month, now.day)
 
-    vocab_count = db.query(VocabItem).filter(VocabItem.user_id == user.id).count()
+    base_filters = [VocabItem.user_id == user.id]
+    if setting.current_book_tag:
+        base_filters.append(VocabItem.tags == setting.current_book_tag)
+
+    vocab_count = db.query(VocabItem).filter(and_(*base_filters)).count()
     due_today = (
         db.query(VocabItem)
-        .filter(and_(VocabItem.user_id == user.id, or_(VocabItem.next_review_at.is_(None), VocabItem.next_review_at <= now)))
+        .filter(and_(*base_filters, or_(VocabItem.next_review_at.is_(None), VocabItem.next_review_at <= now)))
         .count()
     )
     today_reviewed = (

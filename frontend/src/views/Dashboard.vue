@@ -7,6 +7,9 @@ import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/compon
 import VChart from 'vue-echarts'
 import request from '../api/request.js'
 import { useRouter } from 'vue-router'
+import ComicCard from '../components/comic/ComicCard.vue'
+import ComicButton from '../components/comic/ComicButton.vue'
+import ComicBadge from '../components/comic/ComicBadge.vue'
 
 use([CanvasRenderer, LineChart, BarChart, GridComponent, TooltipComponent, LegendComponent])
 
@@ -17,13 +20,10 @@ const dashboard = ref({
   review_trend: [], focus_trend: []
 })
 const progress = ref({ total: 0, new: 0, learning: 0, mastered: 0, familiar: 0 })
-const motivation = ref('')
-const loadingMotivation = ref(false)
 
 onMounted(async () => {
   await loadDashboard()
   await loadProgress()
-  await loadMotivation()
 })
 
 async function loadDashboard() {
@@ -36,19 +36,6 @@ async function loadProgress() {
     const { data } = await request.get('/api/study/stats/progress')
     progress.value = data.data
   } catch (e) {}
-}
-
-async function loadMotivation() {
-  loadingMotivation.value = true
-  try {
-    const ctx = `今日复习${dashboard.value.today_reviewed}个单词，专注${dashboard.value.today_focus_minutes}分钟，完成任务${dashboard.value.today_tasks_completed}个`
-    const { data } = await request.post('/api/ai/daily-motivation', { stats_context: ctx })
-    motivation.value = data.data.message
-  } catch (e) {
-    motivation.value = '每一天的进步，都是未来的伏笔。'
-  } finally {
-    loadingMotivation.value = false
-  }
 }
 
 const reviewChartOption = computed(() => ({
@@ -67,90 +54,91 @@ const focusChartOption = computed(() => ({
 </script>
 
 <template>
-  <div>
-    <h2>Dashboard</h2>
+  <div class="space-y-6">
+    <div class="flex items-center gap-3">
+      <h2 class="font-black text-2xl uppercase tracking-wide text-[#1a1a1a] md:text-4xl">概览</h2>
+      <ComicBadge variant="warning">POW!</ComicBadge>
+    </div>
 
-    <el-alert v-if="motivation" :title="motivation" type="success" :closable="false" show-icon style="margin: 12px 0;" />
+    <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
+      <ComicCard hoverable>
+        <div class="text-3xl font-black text-[#ff006e]">{{ dashboard.vocab_count }}</div>
+        <div class="text-sm font-bold text-[#1a1a1a]/80">词条总数</div>
+      </ComicCard>
+      <ComicCard hoverable>
+        <div class="text-3xl font-black text-[#3a86ff]">{{ dashboard.due_today }}</div>
+        <div class="text-sm font-bold text-[#1a1a1a]/80">今日到期</div>
+      </ComicCard>
+      <ComicCard hoverable>
+        <div class="text-3xl font-black text-[#06ffa5]">{{ dashboard.today_reviewed }}</div>
+        <div class="text-sm font-bold text-[#1a1a1a]/80">今日复习</div>
+      </ComicCard>
+      <ComicCard hoverable>
+        <div class="text-3xl font-black text-[#ffbe0b]">{{ dashboard.today_focus_minutes }}</div>
+        <div class="text-sm font-bold text-[#1a1a1a]/80">专注分钟</div>
+      </ComicCard>
+      <ComicCard hoverable>
+        <div class="text-3xl font-black text-[#fb5607]">{{ dashboard.today_tasks_completed }}</div>
+        <div class="text-sm font-bold text-[#1a1a1a]/80">完成任务</div>
+      </ComicCard>
+      <ComicCard hoverable>
+        <div class="text-3xl font-black text-[#1a1a1a]">{{ dashboard.due_today }}</div>
+        <div class="text-sm font-bold text-[#1a1a1a]/80">待复习</div>
+      </ComicCard>
+    </div>
 
-    <el-row :gutter="16" style="margin-top: 8px;">
-      <el-col :xs="12" :sm="8" :md="4">
-        <el-card shadow="hover">
-          <div style="font-size: 22px; font-weight: 600;">{{ dashboard.vocab_count }}</div>
-          <div style="color: #6b7280; font-size: 13px;">词条总数</div>
-        </el-card>
-      </el-col>
-      <el-col :xs="12" :sm="8" :md="4">
-        <el-card shadow="hover">
-          <div style="font-size: 22px; font-weight: 600;">{{ dashboard.due_today }}</div>
-          <div style="color: #6b7280; font-size: 13px;">今日到期</div>
-        </el-card>
-      </el-col>
-      <el-col :xs="12" :sm="8" :md="4">
-        <el-card shadow="hover">
-          <div style="font-size: 22px; font-weight: 600;">{{ dashboard.today_reviewed }}</div>
-          <div style="color: #6b7280; font-size: 13px;">今日复习</div>
-        </el-card>
-      </el-col>
-      <el-col :xs="12" :sm="8" :md="4">
-        <el-card shadow="hover">
-          <div style="font-size: 22px; font-weight: 600;">{{ dashboard.today_focus_minutes }}</div>
-          <div style="color: #6b7280; font-size: 13px;">专注分钟</div>
-        </el-card>
-      </el-col>
-      <el-col :xs="12" :sm="8" :md="4">
-        <el-card shadow="hover">
-          <div style="font-size: 22px; font-weight: 600;">{{ dashboard.today_tasks_completed }}</div>
-          <div style="color: #6b7280; font-size: 13px;">完成任务</div>
-        </el-card>
-      </el-col>
-      <el-col :xs="12" :sm="8" :md="4">
-        <el-card shadow="hover">
-          <div style="font-size: 22px; font-weight: 600;">{{ dashboard.due_today }}</div>
-          <div style="color: #6b7280; font-size: 13px;">待复习</div>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <el-card style="margin-top: 16px;">
+    <ComicCard>
       <template #header>
-        <span>学习进度概览</span>
+        <div class="flex items-center justify-between">
+          <span class="font-black text-lg uppercase tracking-wide">学习进度概览</span>
+          <ComicBadge variant="success">BAM!</ComicBadge>
+        </div>
       </template>
-      <div style="display: flex; gap: 24px; flex-wrap: wrap;">
-        <div><div style="font-size: 20px; font-weight: 600;">{{ progress.total - progress.new }}</div><div style="color: #6b7280; font-size: 13px;">已学单词</div></div>
-        <div><div style="font-size: 20px; font-weight: 600;">{{ progress.mastered }}</div><div style="color: #6b7280; font-size: 13px;">已掌握</div></div>
-        <div><div style="font-size: 20px; font-weight: 600;">{{ progress.familiar }}</div><div style="color: #6b7280; font-size: 13px;">熟知</div></div>
-        <div style="flex: 1; text-align: right;">
-          <el-button type="primary" @click="router.push('/study')">开始学习</el-button>
-          <el-button @click="router.push('/progress')">查看进度</el-button>
+      <div class="flex flex-wrap items-center gap-6">
+        <div>
+          <div class="text-2xl font-black text-[#ff006e]">{{ progress.total - progress.new }}</div>
+          <div class="text-sm font-bold text-[#1a1a1a]/80">已学单词</div>
+        </div>
+        <div>
+          <div class="text-2xl font-black text-[#06ffa5]">{{ progress.mastered }}</div>
+          <div class="text-sm font-bold text-[#1a1a1a]/80">已掌握</div>
+        </div>
+        <div>
+          <div class="text-2xl font-black text-[#3a86ff]">{{ progress.familiar }}</div>
+          <div class="text-sm font-bold text-[#1a1a1a]/80">熟知</div>
+        </div>
+        <div class="flex flex-1 justify-end gap-3">
+          <ComicButton variant="primary" @click="router.push('/study')">开始学习</ComicButton>
+          <ComicButton variant="light" @click="router.push('/progress')">查看进度</ComicButton>
         </div>
       </div>
-    </el-card>
+    </ComicCard>
 
-    <el-card style="margin-top: 16px;">
+    <ComicCard>
       <template #header>
-        <span>快捷入口</span>
+        <span class="font-black text-lg uppercase tracking-wide">快捷入口</span>
       </template>
-      <el-space>
-        <el-button type="primary" @click="router.push('/study')">开始学习</el-button>
-        <el-button @click="router.push('/practice')">去练习</el-button>
-        <el-button @click="router.push('/focus')">专注计时</el-button>
-        <el-button @click="router.push('/tasks')">任务管理</el-button>
-      </el-space>
-    </el-card>
+      <div class="flex flex-wrap gap-3">
+        <ComicButton variant="primary" @click="router.push('/study')">开始学习</ComicButton>
+        <ComicButton variant="secondary" @click="router.push('/practice')">去练习</ComicButton>
+        <ComicButton variant="warning" @click="router.push('/focus')">专注计时</ComicButton>
+        <ComicButton variant="success" @click="router.push('/tasks')">任务管理</ComicButton>
+      </div>
+    </ComicCard>
 
-    <el-row :gutter="16" style="margin-top: 16px;">
-      <el-col :xs="24" :md="12">
-        <el-card>
-          <template #header>近7天复习趋势</template>
-          <v-chart :option="reviewChartOption" style="height: 240px;" />
-        </el-card>
-      </el-col>
-      <el-col :xs="24" :md="12">
-        <el-card>
-          <template #header>近7天专注趋势</template>
-          <v-chart :option="focusChartOption" style="height: 240px;" />
-        </el-card>
-      </el-col>
-    </el-row>
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <ComicCard>
+        <template #header>
+          <span class="font-black text-lg uppercase tracking-wide">近7天复习趋势</span>
+        </template>
+        <v-chart :option="reviewChartOption" class="h-60" />
+      </ComicCard>
+      <ComicCard>
+        <template #header>
+          <span class="font-black text-lg uppercase tracking-wide">近7天专注趋势</span>
+        </template>
+        <v-chart :option="focusChartOption" class="h-60" />
+      </ComicCard>
+    </div>
   </div>
 </template>

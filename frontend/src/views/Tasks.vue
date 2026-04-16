@@ -2,6 +2,9 @@
 import { ref, onMounted } from 'vue'
 import request from '../api/request.js'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import ComicCard from '../components/comic/ComicCard.vue'
+import ComicButton from '../components/comic/ComicButton.vue'
+import ComicBadge from '../components/comic/ComicBadge.vue'
 
 const tasks = ref([])
 const filterStatus = ref('')
@@ -46,74 +49,78 @@ async function remove(id) {
   await loadTasks()
 }
 
-const priorityTag = (p) => ({ high: 'danger', medium: 'warning', low: 'info' }[p] || 'info')
-const statusTag = (s) => ({ todo: 'info', done: 'success' }[s] || 'info')
+const priorityVariant = (p) => ({ high: 'danger', medium: 'warning', low: 'secondary' }[p] || 'secondary')
+const statusVariant = (s) => ({ todo: 'secondary', done: 'success' }[s] || 'secondary')
 </script>
 
 <template>
-  <div>
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-      <h2>任务管理</h2>
-      <el-button type="primary" @click="openCreate">新建任务</el-button>
+  <div class="space-y-4">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <h2 class="font-black text-2xl uppercase tracking-wide text-[#1a1a1a] md:text-4xl">任务管理</h2>
+        <ComicBadge variant="warning">TASK!</ComicBadge>
+      </div>
+      <ComicButton variant="primary" @click="openCreate">新建任务</ComicButton>
     </div>
 
-    <div style="margin: 12px 0;">
-      <el-radio-group v-model="filterStatus" @change="loadTasks">
-        <el-radio-button label="">全部</el-radio-button>
-        <el-radio-button label="todo">进行中</el-radio-button>
-        <el-radio-button label="done">已完成</el-radio-button>
-      </el-radio-group>
+    <div class="flex flex-wrap gap-2">
+      <ComicButton :variant="filterStatus === '' ? 'dark' : 'light'" size="sm" @click="filterStatus = ''; loadTasks()">全部</ComicButton>
+      <ComicButton :variant="filterStatus === 'todo' ? 'dark' : 'light'" size="sm" @click="filterStatus = 'todo'; loadTasks()">进行中</ComicButton>
+      <ComicButton :variant="filterStatus === 'done' ? 'dark' : 'light'" size="sm" @click="filterStatus = 'done'; loadTasks()">已完成</ComicButton>
     </div>
 
-    <el-table :data="tasks" style="width: 100%;">
-      <el-table-column prop="title" label="标题" />
-      <el-table-column prop="description" label="描述" show-overflow-tooltip />
-      <el-table-column prop="priority" label="优先级" width="100">
-        <template #default="{ row }">
-          <el-tag :type="priorityTag(row.priority)">{{ row.priority }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="status" label="状态" width="100">
-        <template #default="{ row }">
-          <el-tag :type="statusTag(row.status)">{{ row.status }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="160">
-        <template #default="{ row }">
-          <el-button text @click="openEdit(row)">编辑</el-button>
-          <el-button text type="danger" @click="remove(row.id)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <div class="space-y-3">
+      <ComicCard v-for="row in tasks" :key="row.id" hoverable>
+        <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div>
+            <div class="font-black text-lg text-[#1a1a1a]">{{ row.title }}</div>
+            <div class="text-sm font-bold text-[#1a1a1a]/70">{{ row.description || '暂无描述' }}</div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <ComicBadge :variant="priorityVariant(row.priority)">{{ row.priority }}</ComicBadge>
+            <ComicBadge :variant="statusVariant(row.status)">{{ row.status }}</ComicBadge>
+            <ComicButton variant="light" size="sm" @click="openEdit(row)">编辑</ComicButton>
+            <ComicButton variant="danger" size="sm" @click="remove(row.id)">删除</ComicButton>
+          </div>
+        </div>
+      </ComicCard>
+    </div>
 
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑任务' : '新建任务'" width="480px">
-      <el-form label-width="80px">
-        <el-form-item label="标题">
+      <div class="space-y-4">
+        <div>
+          <div class="mb-1 font-bold">标题</div>
           <el-input v-model="form.title" />
-        </el-form-item>
-        <el-form-item label="描述">
+        </div>
+        <div>
+          <div class="mb-1 font-bold">描述</div>
           <el-input v-model="form.description" type="textarea" />
-        </el-form-item>
-        <el-form-item label="优先级">
-          <el-select v-model="form.priority">
+        </div>
+        <div>
+          <div class="mb-1 font-bold">优先级</div>
+          <el-select v-model="form.priority" class="w-full">
             <el-option label="高" value="high" />
             <el-option label="中" value="medium" />
             <el-option label="低" value="low" />
           </el-select>
-        </el-form-item>
-        <el-form-item label="截止日期">
-          <el-date-picker v-model="form.due_date" type="datetime" style="width: 100%;" />
-        </el-form-item>
-        <el-form-item label="状态" v-if="isEdit">
-          <el-select v-model="form.status">
+        </div>
+        <div>
+          <div class="mb-1 font-bold">截止日期</div>
+          <el-date-picker v-model="form.due_date" type="datetime" class="w-full" />
+        </div>
+        <div v-if="isEdit">
+          <div class="mb-1 font-bold">状态</div>
+          <el-select v-model="form.status" class="w-full">
             <el-option label="进行中" value="todo" />
             <el-option label="已完成" value="done" />
           </el-select>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="save">保存</el-button>
+        <div class="flex justify-end gap-3">
+          <ComicButton variant="light" @click="dialogVisible = false">取消</ComicButton>
+          <ComicButton variant="primary" @click="save">保存</ComicButton>
+        </div>
       </template>
     </el-dialog>
   </div>

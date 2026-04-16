@@ -1,0 +1,232 @@
+/* Element Plus Comic Style Overrides */
+
+/* Message */
+.el-message {
+  border: 4px solid #1a1a1a !important;
+  border-radius: 8px !important;
+  box-shadow: 4px 4px 0px 0px rgba(26, 26, 26, 1) !important;
+  background-color: #fffef0 !important;
+  font-weight: 700 !important;
+}
+.el-message__content {
+  color: #1a1a1a !important;
+}
+.el-message .el-message__icon {
+  font-size: 18px !important;
+}
+
+/* Drawer */
+.el-drawer {
+  border-left: 4px solid #1a1a1a !important;
+  box-shadow: -6px 0 0 0 rgba(26, 26, 26, 1) !important;
+}
+.el-drawer__header {
+  border-bottom: 4px solid #1a1a1a !important;
+  padding: 16px 20px !important;
+  margin-bottom: 0 !important;
+  font-weight: 900 !important;
+  font-size: 20px !important;
+  color: #1a1a1a !important;
+}
+
+/* Dialog */
+.el-dialog {
+  border: 4px solid #1a1a1a !important;
+  border-radius: 8px !important;
+  box-shadow: 6px 6px 0px 0px rgba(26, 26, 26, 1) !important;
+  background-color: #fffef0 !important;
+}
+.el-dialog__header {
+  border-bottom: 4px solid #1a1a1a !important;
+  padding: 16px 20px !important;
+  margin-right: 0 !important;
+}
+.el-dialog__title {
+  font-weight: 900 !important;
+  font-size: 18px !important;
+  color: #1a1a1a !important;
+}
+.el-dialog__footer {
+  border-top: 4px solid #1a1a1a !important;
+  padding: 16px 20px !important;
+}
+
+/* Slider */
+.el-slider__runway {
+  height: 8px !important;
+  background-color: #fffef0 !important;
+  border: 3px solid #1a1a1a !important;
+  border-radius: 0 !important;
+}
+.el-slider__bar {
+  background-color: #ff006e !important;
+  border-radius: 0 !important;
+}
+.el-slider__button {
+  border: 3px solid #1a1a1a !important;
+  background-color: #ffbe0b !important;
+  box-shadow: 2px 2px 0px 0px rgba(26, 26, 26, 1) !important;
+  width: 20px !important;
+  height: 20px !important;
+}
+.el-slider__stop {
+  background-color: #1a1a1a !important;
+  width: 4px !important;
+  height: 8px !important;
+  border-radius: 0 !important;
+  top: -2px !important;
+}
+
+/* Pagination */
+.el-pagination .btn-prev,
+.el-pagination .btn-next,
+.el-pagination .number {
+  border: 3px solid #1a1a1a !important;
+  background-color: #fffef0 !important;
+  color: #1a1a1a !important;
+  font-weight: 700 !important;
+  margin: 0 2px !important;
+  min-width: 32px !important;
+  height: 32px !important;
+  border-radius: 6px !important;
+}
+.el-pagination .number.is-active {
+  background-color: #ff006e !important;
+  color: #fff !important;
+  border-color: #1a1a1a !important;
+}
+
+/* Table */
+.el-table {
+  border: 4px solid #1a1a1a !important;
+  border-radius: 8px !important;
+  background-color: #fffef0 !important;
+  box-shadow: 4px 4px 0px 0px rgba(26, 26, 26, 1) !important;
+  --el-table-header-bg-color: #ffbe0b !important;
+  --el-table-row-hover-bg-color: #fff8e1 !important;
+}
+.el-table th.el-table__cell {
+  background-color: #ffbe0b !important;
+  color: #1a1a1a !important;
+  font-weight: 900 !important;
+  border-bottom: 3px solid #1a1a1a !important;
+}
+.el-table td.el-table__cell {
+  border-bottom: 2px solid #1a1a1a !important;
+  font-weight: 700 !important;
+}
+.el-table__inner-wrapper::before {
+  display: none !important;
+}
+
+/* Tags */
+.el-tag {
+  border: 3px solid #1a1a1a !important;
+  border-radius: 6px !important;
+  font-weight: 700 !important;
+  box-shadow: 2px 2px 0px 0px rgba(26, 26, 26, 1) !important;
+}
+.el-tag--success {
+  background-color: #06ffa5 !important;
+  color: #1a1a1a !important;
+}
+.el-tag--warning {
+  background-color: #ffbe0b !important;
+  color: #1a1a1a !important;
+}
+.el-tag--danger {
+  background-color: #fb5607 !important;
+  color: #fff !important;
+}
+.el-tag--info {
+  background-color: #3a86ff !important;
+  color: #fff !important;
+}
+
+/* Select / Input internal overrides */
+.el-select .el-input__wrapper,
+.el-input__wrapper {
+  border-radius: 8px !important;
+  box-shadow: 0 0 0 4px #1a1a1a inset !important;
+  background-color: #fff !important;
+}
+.el-input__inner {
+  font-weight: 700 !important;
+  color: #1a1a1a !important;
+}
+.el-textarea__inner {
+  border: 4px solid #1a1a1a !important;
+  border-radius: 8px !important;
+  font-weight: 700 !important;
+  color: #1a1a1a !important;
+  box-shadow: 4px 4px 0px 0px rgba(26, 26, 26, 1) !important;
+}
+
+/* Date picker */
+.el-date-editor.el-input__wrapper {
+  box-shadow: 0 0 0 4px #1a1a1a inset !important;
+}
+
+/* Result */
+.el-result__icon svg {
+  stroke: #1a1a1a !important;
+  stroke-width: 4px !important;
+}
+
+/* Calendar */
+.el-calendar {
+  border: 4px solid #1a1a1a !important;
+  border-radius: 8px !important;
+  background-color: #fffef0 !important;
+  box-shadow: 4px 4px 0px 0px rgba(26, 26, 26, 1) !important;
+}
+.el-calendar__header {
+  border-bottom: 4px solid #1a1a1a !important;
+}
+.el-calendar__button-prev,
+.el-calendar__button-next,
+.el-button.el-calendar__button-prev,
+.el-button.el-calendar__button-next {
+  border: 3px solid #1a1a1a !important;
+  font-weight: 700 !important;
+  border-radius: 6px !important;
+}
+.el-calendar-table thead th {
+  border-bottom: 3px solid #1a1a1a !important;
+  font-weight: 900 !important;
+}
+.el-calendar-table td {
+  border-bottom: 2px solid #1a1a1a !important;
+  border-right: 2px solid #1a1a1a !important;
+}
+.el-calendar-table .el-calendar-day:hover {
+  background-color: #ffbe0b !important;
+}
+.el-calendar-table td.is-selected .el-calendar-day {
+  background-color: #ff006e !important;
+  color: #fff !important;
+}
+
+/* Radio group buttons */
+.el-radio-button__inner {
+  border: 3px solid #1a1a1a !important;
+  font-weight: 700 !important;
+  background-color: #fffef0 !important;
+  color: #1a1a1a !important;
+}
+.el-radio-button__original-radio:checked + .el-radio-button__inner {
+  background-color: #ff006e !important;
+  color: #fff !important;
+  box-shadow: -1px 0 0 0 #1a1a1a !important;
+}
+
+/* Message Box */
+.el-message-box {
+  border: 4px solid #1a1a1a !important;
+  border-radius: 8px !important;
+  box-shadow: 6px 6px 0px 0px rgba(26, 26, 26, 1) !important;
+  background-color: #fffef0 !important;
+}
+.el-message-box__title {
+  font-weight: 900 !important;
+}

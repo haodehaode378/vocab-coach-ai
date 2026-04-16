@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import PracticeSession, ReviewLog, UserSetting, VocabItem
-from app.services import get_or_create_user, get_or_create_user_settings
+from app.services import get_or_create_user, get_or_create_user_settings, get_user_books
 from app.sm2 import SrsState
 from app.study_engine import evaluate_word
 
@@ -32,6 +32,18 @@ class TestGenerateBody(BaseModel):
     user_email: str = "local@ai-vocab-agent.dev"
 
 
+class CurrentBookBody(BaseModel):
+    current_book_tag: str | None = None
+    user_email: str = "local@ai-vocab-agent.dev"
+
+
+def _base_filters(user_id: int, book_tag: str | None):
+    filters = [VocabItem.user_id == user_id]
+    if book_tag:
+        filters.append(VocabItem.tags == book_tag)
+    return filters
+
+
 @router.get("/settings")
 def get_settings(user_email: str = "local@ai-vocab-agent.dev", db: Session = Depends(get_db)):
     setting = get_or_create_user_settings(db, user_email)
@@ -40,6 +52,7 @@ def get_settings(user_email: str = "local@ai-vocab-agent.dev", db: Session = Dep
         "data": {
             "daily_new_words": setting.daily_new_words,
             "daily_review_limit": setting.daily_review_limit,
+            "current_book_tag": setting.current_book_tag,
         },
     }
 
@@ -57,6 +70,22 @@ def update_settings(body: SettingsBody, db: Session = Depends(get_db)):
             "daily_review_limit": setting.daily_review_limit,
         },
     }
+
+
+@router.get("/books")
+def get_books(user_email: str = "local@ai-vocab-agent.dev", db: Session = Depends(get_db)):
+    user = get_or_create_user(db, user_email)
+    books = get_user_books(db, user.id)
+    setting = get_or_create_user_settings(db, user_email)
+    return {"success": True, "data": {"books": books, "current_book_tag": setting.current_book_tag}}
+
+
+@router.post("/current-book")
+def set_current_book(body: CurrentBookBody, db: Session = Depends(get_db)):
+    setting = get_or_create_user_settings(db, body.user_email)
+    setting.current_book_tag = body.current_book_tag
+    db.commit()
+    return {"success": True, "data": {"current_book_tag": setting.current_book_tag}}
 
 
 def _item_to_dict(item: VocabItem, is_new: bool) -> dict:
@@ -78,13 +107,14 @@ def get_today_queue(user_email: str = "local@ai-vocab-agent.dev", db: Session = 
     setting = get_or_create_user_settings(db, user_email)
     now = datetime.utcnow()
     one_hour_ago = now - timedelta(hours=1)
+    base = _base_filters(user.id, setting.current_book_tag)
 
     # 1. 即时复习词：1 小时内刚被 grade 为 vague/forget 且已到期的
     urgent_items = (
         db.query(VocabItem)
         .filter(
             and_(
-                VocabItem.user_id == user.id,
+                *base,
                 VocabItem.status != "new",
                 or_(VocabItem.next_review_at.is_(None), VocabItem.next_review_at <= now),
                 VocabItem.last_graded_at >= one_hour_ago,
@@ -101,7 +131,7 @@ def get_today_queue(user_email: str = "local@ai-vocab-agent.dev", db: Session = 
         db.query(VocabItem)
         .filter(
             and_(
-                VocabItem.user_id == user.id,
+                *base,
                 VocabItem.status != "new",
                 or_(VocabItem.next_review_at.is_(None), VocabItem.next_review_at <= now),
                 ~VocabItem.id.in_(urgent_ids),
@@ -116,7 +146,7 @@ def get_today_queue(user_email: str = "local@ai-vocab-agent.dev", db: Session = 
     new_limit = max(0, setting.daily_new_words)
     new_items = (
         db.query(VocabItem)
-        .filter(and_(VocabItem.user_id == user.id, VocabItem.status == "new"))
+        .filter(and_(*base, VocabItem.status == "new"))
         .order_by(VocabItem.study_order.asc())
         .limit(new_limit)
         .all()
@@ -210,15 +240,17 @@ def generate_daily_test(body: TestGenerateBody, db: Session = Depends(get_db)):
     import random
 
     user = get_or_create_user(db, body.user_email)
+    setting = get_or_create_user_settings(db, body.user_email)
     now = datetime.utcnow()
     today_start = datetime(now.year, now.month, now.day)
+    base = _base_filters(user.id, setting.current_book_tag)
 
     # 候选池 1：今天新学的单词
     today_new = (
         db.query(VocabItem)
         .filter(
             and_(
-                VocabItem.user_id == user.id,
+                *base,
                 VocabItem.new_learned_at >= today_start,
             )
         )
@@ -231,7 +263,7 @@ def generate_daily_test(body: TestGenerateBody, db: Session = Depends(get_db)):
         db.query(VocabItem)
         .filter(
             and_(
-                VocabItem.user_id == user.id,
+                *base,
                 VocabItem.status != "new",
                 VocabItem.mastery < 60,
                 VocabItem.last_graded_at >= week_ago,
@@ -246,7 +278,7 @@ def generate_daily_test(body: TestGenerateBody, db: Session = Depends(get_db)):
         # 补充任意已学单词
         extra = (
             db.query(VocabItem)
-            .filter(and_(VocabItem.user_id == user.id, VocabItem.status != "new"))
+            .filter(and_(*base, VocabItem.status != "new"))
             .limit(20)
             .all()
         )
@@ -256,7 +288,7 @@ def generate_daily_test(body: TestGenerateBody, db: Session = Depends(get_db)):
     picked = random.sample(pool, count)
 
     questions = []
-    all_words = db.query(VocabItem).filter(VocabItem.user_id == user.id).all()
+    all_words = db.query(VocabItem).filter(and_(*base)).all()
     for idx, w in enumerate(picked):
         distractors = [x.word for x in all_words if x.id != w.id and x.word != w.word]
         choices = random.sample(distractors, min(3, len(distractors))) + [w.word]
@@ -286,12 +318,14 @@ def generate_daily_test(body: TestGenerateBody, db: Session = Depends(get_db)):
 @router.get("/stats/progress")
 def get_progress(user_email: str = "local@ai-vocab-agent.dev", db: Session = Depends(get_db)):
     user = get_or_create_user(db, user_email)
+    setting = get_or_create_user_settings(db, user_email)
+    base = _base_filters(user.id, setting.current_book_tag)
 
-    total = db.query(VocabItem).filter(VocabItem.user_id == user.id).count()
-    new_count = db.query(VocabItem).filter(and_(VocabItem.user_id == user.id, VocabItem.status == "new")).count()
-    learning_count = db.query(VocabItem).filter(and_(VocabItem.user_id == user.id, VocabItem.status == "learning")).count()
-    mastered_count = db.query(VocabItem).filter(and_(VocabItem.user_id == user.id, VocabItem.status == "mastered")).count()
-    familiar_count = db.query(VocabItem).filter(and_(VocabItem.user_id == user.id, VocabItem.status == "familiar")).count()
+    total = db.query(VocabItem).filter(and_(*base)).count()
+    new_count = db.query(VocabItem).filter(and_(*base, VocabItem.status == "new")).count()
+    learning_count = db.query(VocabItem).filter(and_(*base, VocabItem.status == "learning")).count()
+    mastered_count = db.query(VocabItem).filter(and_(*base, VocabItem.status == "mastered")).count()
+    familiar_count = db.query(VocabItem).filter(and_(*base, VocabItem.status == "familiar")).count()
 
     # 熟练度分布
     mastery_dist = {
@@ -301,7 +335,7 @@ def get_progress(user_email: str = "local@ai-vocab-agent.dev", db: Session = Dep
         "61-80": 0,
         "81-100": 0,
     }
-    items = db.query(VocabItem.mastery).filter(VocabItem.user_id == user.id).all()
+    items = db.query(VocabItem.mastery).filter(and_(*base)).all()
     for (m,) in items:
         if m <= 20:
             mastery_dist["0-20"] += 1
