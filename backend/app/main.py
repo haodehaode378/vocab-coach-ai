@@ -20,7 +20,7 @@ for p in (PROJECT_ROOT, BACKEND_ROOT):
 from app.database import Base, engine, get_db
 from app.models import PracticeAnswer, PracticeSession, ReviewLog, VocabItem, FocusSession, Task, DailyCheckin
 from app.services import get_or_create_user, import_json_lines
-from app.sm2 import SrsState, apply_sm2
+from app.routers.study import get_today_queue, grade_word, GradeBody as StudyGradeBody
 from app.routers import checkin as checkin_router
 
 STATIC_DIR = PROJECT_ROOT / "frontend" / "dist"
@@ -35,14 +35,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.mount("/", StaticFiles(directory=str(STATIC_DIR), html=True), name="frontend")
 
-from app.routers import focus, tasks, checkin, ai, system
+from app.routers import focus, tasks, checkin, ai, system, study
 app.include_router(focus.router)
 app.include_router(tasks.router)
 app.include_router(checkin.router)
 app.include_router(ai.router)
 app.include_router(system.router)
+app.include_router(study.router)
 
 
 class ImportBody(BaseModel):
@@ -136,85 +136,34 @@ def list_vocab(
     }
 
 
+def _grade_map(old_grade: str) -> str:
+    mapping = {"again": "forget", "hard": "vague", "good": "know", "easy": "know"}
+    return mapping.get(old_grade, "forget")
+
+
 @app.get("/api/review/today")
 def review_today(
     limit: int = 50,
     user_email: str = "local@ai-vocab-agent.dev",
     db: Session = Depends(get_db),
 ):
-    user = get_or_create_user(db, user_email)
-    now = datetime.utcnow()
-    items = (
-        db.query(VocabItem)
-        .filter(
-            and_(
-                VocabItem.user_id == user.id,
-                or_(VocabItem.next_review_at.is_(None), VocabItem.next_review_at <= now),
-            )
-        )
-        .order_by(VocabItem.next_review_at.asc().nullsfirst(), VocabItem.created_at.asc())
-        .limit(max(1, min(limit, 200)))
-        .all()
-    )
-    return {
-        "success": True,
-        "data": [
-            {
-                "id": i.id,
-                "word": i.word,
-                "phonetic": i.phonetic,
-                "meaning_zh": i.meaning_zh,
-                "example": i.example,
-            }
-            for i in items
-        ],
-    }
+    """兼容旧接口：内部委托到 /api/study/today"""
+    return get_today_queue(user_email=user_email, db=db)
 
 
 @app.post("/api/review/grade")
 def review_grade(body: ReviewBody, db: Session = Depends(get_db)):
+    """兼容旧接口：内部委托到 /api/study/grade"""
     if body.grade not in {"again", "hard", "good", "easy"}:
         raise HTTPException(status_code=400, detail="Invalid grade")
-
-    user = get_or_create_user(db, body.user_email)
-    item = db.query(VocabItem).filter(and_(VocabItem.id == body.vocab_item_id, VocabItem.user_id == user.id)).first()
-    if item is None:
-        raise HTTPException(status_code=404, detail="Vocab item not found")
-
-    next_state = apply_sm2(
-        SrsState(ease_factor=item.ease_factor, interval_days=item.interval_days, repetitions=item.repetitions),
-        body.grade,
+    response = _grade_map(body.grade)
+    study_body = StudyGradeBody(
+        vocab_item_id=body.vocab_item_id,
+        response=response,
+        session_type="review",
+        user_email=body.user_email,
     )
-
-    next_review_at = datetime.utcnow() + timedelta(days=next_state.interval_days)
-
-    db.add(
-        ReviewLog(
-            user_id=user.id,
-            vocab_item_id=item.id,
-            grade=body.grade,
-            old_interval=item.interval_days,
-            new_interval=next_state.interval_days,
-        )
-    )
-
-    item.ease_factor = next_state.ease_factor
-    item.interval_days = next_state.interval_days
-    item.repetitions = next_state.repetitions
-    item.next_review_at = next_review_at
-    db.commit()
-    checkin_router.refresh_checkin_stats(db, user.id, datetime.utcnow())
-
-    return {
-        "success": True,
-        "data": {
-            "vocab_item_id": item.id,
-            "next_review_at": next_review_at,
-            "ease_factor": item.ease_factor,
-            "interval_days": item.interval_days,
-            "repetitions": item.repetitions,
-        },
-    }
+    return grade_word(body=study_body, db=db)
 
 
 @app.post("/api/practice/generate")
@@ -402,6 +351,10 @@ def stats_dashboard(user_email: str = "local@ai-vocab-agent.dev", db: Session = 
             "focus_trend": focus_trend,
         },
     }
+
+
+# 前端静态文件挂载放在所有 API 路由之后，避免拦截 /api/* 请求
+app.mount("/", StaticFiles(directory=str(STATIC_DIR), html=True), name="frontend")
 
 
 if __name__ == "__main__":

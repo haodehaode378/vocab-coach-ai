@@ -2,6 +2,11 @@
 import { ref, onMounted } from 'vue'
 import request from '../api/request.js'
 import { ElMessage } from 'element-plus'
+import { useRoute, useRouter } from 'vue-router'
+
+const route = useRoute()
+const router = useRouter()
+const isDailyTest = ref(false)
 
 const mode = ref('mcq')
 const count = ref(10)
@@ -9,6 +14,24 @@ const questions = ref([])
 const sessionId = ref(null)
 const result = ref(null)
 const loading = ref(false)
+
+onMounted(() => {
+  if (route.query.source === 'daily_test') {
+    isDailyTest.value = true
+    const raw = localStorage.getItem('daily_test_session')
+    if (raw) {
+      try {
+        const payload = JSON.parse(raw)
+        sessionId.value = payload.session_id
+        questions.value = payload.questions.map(q => ({ ...q, user_answer: '' }))
+        result.value = null
+        localStorage.removeItem('daily_test_session')
+      } catch {
+        ElMessage.error('测试数据加载失败')
+      }
+    }
+  }
+})
 
 async function generate() {
   loading.value = true
@@ -43,8 +66,8 @@ async function submit() {
 
 <template>
   <div>
-    <h2>练习模式</h2>
-    <div style="display: flex; gap: 10px; margin: 16px 0; align-items: center;">
+    <h2>{{ isDailyTest ? '今日测试' : '练习模式' }}</h2>
+    <div v-if="!isDailyTest" style="display: flex; gap: 10px; margin: 16px 0; align-items: center;">
       <el-select v-model="mode" style="width: 120px;">
         <el-option label="选择题" value="mcq" />
         <el-option label="拼写题" value="spelling" />
@@ -65,7 +88,13 @@ async function submit() {
           <el-input v-model="q.user_answer" placeholder="输入拼写" style="max-width: 300px;" />
         </div>
       </el-card>
-      <el-button type="primary" @click="submit" style="margin-top: 8px;">提交练习</el-button>
+      <div style="display: flex; gap: 10px; margin-top: 8px;">
+        <el-button type="primary" @click="submit">提交{{ isDailyTest ? '测试' : '练习' }}</el-button>
+        <el-button v-if="isDailyTest" @click="router.push('/')">返回概览</el-button>
+      </div>
+    </div>
+    <div v-else-if="isDailyTest" style="color: #6b7280; margin-top: 20px;">
+      暂无测试题目，先去完成今日学习吧 ~
     </div>
 
     <el-alert v-if="result" :title="`正确 ${result.correct_count}/${result.total}，错误 ${result.wrong_count}`" type="info" show-icon style="margin-top: 16px; max-width: 720px;" />

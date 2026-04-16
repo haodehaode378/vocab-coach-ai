@@ -16,17 +16,26 @@ const dashboard = ref({
   today_focus_minutes: 0, today_tasks_completed: 0,
   review_trend: [], focus_trend: []
 })
+const progress = ref({ total: 0, new: 0, learning: 0, mastered: 0, familiar: 0 })
 const motivation = ref('')
 const loadingMotivation = ref(false)
 
 onMounted(async () => {
   await loadDashboard()
+  await loadProgress()
   await loadMotivation()
 })
 
 async function loadDashboard() {
   const { data } = await request.get('/api/stats/dashboard')
   dashboard.value = data.data
+}
+
+async function loadProgress() {
+  try {
+    const { data } = await request.get('/api/study/stats/progress')
+    progress.value = data.data
+  } catch (e) {}
 }
 
 async function loadMotivation() {
@@ -104,10 +113,25 @@ const focusChartOption = computed(() => ({
 
     <el-card style="margin-top: 16px;">
       <template #header>
+        <span>学习进度概览</span>
+      </template>
+      <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+        <div><div style="font-size: 20px; font-weight: 600;">{{ progress.total - progress.new }}</div><div style="color: #6b7280; font-size: 13px;">已学单词</div></div>
+        <div><div style="font-size: 20px; font-weight: 600;">{{ progress.mastered }}</div><div style="color: #6b7280; font-size: 13px;">已掌握</div></div>
+        <div><div style="font-size: 20px; font-weight: 600;">{{ progress.familiar }}</div><div style="color: #6b7280; font-size: 13px;">熟知</div></div>
+        <div style="flex: 1; text-align: right;">
+          <el-button type="primary" @click="router.push('/study')">开始学习</el-button>
+          <el-button @click="router.push('/progress')">查看进度</el-button>
+        </div>
+      </div>
+    </el-card>
+
+    <el-card style="margin-top: 16px;">
+      <template #header>
         <span>快捷入口</span>
       </template>
       <el-space>
-        <el-button type="primary" @click="router.push('/review')">开始复习</el-button>
+        <el-button type="primary" @click="router.push('/study')">开始学习</el-button>
         <el-button @click="router.push('/practice')">去练习</el-button>
         <el-button @click="router.push('/focus')">专注计时</el-button>
         <el-button @click="router.push('/tasks')">任务管理</el-button>

@@ -6,7 +6,7 @@ from pathlib import Path
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
 
-from .models import ReviewLog, User, VocabItem
+from .models import ReviewLog, User, UserSetting, VocabItem
 
 DEFAULT_EMAIL = "local@ai-vocab-agent.dev"
 
@@ -22,10 +22,31 @@ def get_or_create_user(db: Session, email: str = DEFAULT_EMAIL) -> User:
     return user
 
 
+def get_or_create_user_settings(db: Session, email: str = DEFAULT_EMAIL) -> UserSetting:
+    user = get_or_create_user(db, email)
+    setting = db.query(UserSetting).filter(UserSetting.user_id == user.id).first()
+    if setting:
+        return setting
+    setting = UserSetting(user_id=user.id, daily_new_words=20, daily_review_limit=50)
+    db.add(setting)
+    db.commit()
+    db.refresh(setting)
+    return setting
+
+
 def import_json_lines(db: Session, file_paths: list[str], email: str = DEFAULT_EMAIL) -> dict:
     user = get_or_create_user(db, email)
     imported = 0
     skipped = 0
+
+    # 获取当前用户的最大 study_order，新词从下一个序号开始
+    max_order_row = (
+        db.query(VocabItem)
+        .filter(VocabItem.user_id == user.id)
+        .order_by(VocabItem.study_order.desc())
+        .first()
+    )
+    current_order = (max_order_row.study_order if max_order_row else 0) + 1
 
     for fp in file_paths:
       path = Path(fp)
@@ -73,9 +94,13 @@ def import_json_lines(db: Session, file_paths: list[str], email: str = DEFAULT_E
                       meaning_zh=meaning_zh,
                       example=example,
                       tags=source_tag,
-                      next_review_at=datetime.utcnow(),
+                      status="new",
+                      mastery=0,
+                      study_order=current_order,
+                      next_review_at=None,
                   )
                   db.add(item)
+                  current_order += 1
               else:
                   item.phonetic = phonetic or item.phonetic
                   item.meaning_zh = meaning_zh or item.meaning_zh

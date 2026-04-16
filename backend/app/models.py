@@ -25,6 +25,13 @@ class VocabItem(Base):
     meaning_zh: Mapped[str | None] = mapped_column(Text, nullable=True)
     example: Mapped[str | None] = mapped_column(Text, nullable=True)
     tags: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # 墨墨式学习字段
+    status: Mapped[str] = mapped_column(String(16), default="new")
+    mastery: Mapped[int] = mapped_column(Integer, default=0)
+    study_order: Mapped[int] = mapped_column(Integer, default=0, index=True)
+    new_learned_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_graded_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # SM-2 字段
     ease_factor: Mapped[float] = mapped_column(Float, default=2.5)
     interval_days: Mapped[int] = mapped_column(Integer, default=0)
     repetitions: Mapped[int] = mapped_column(Integer, default=0)
@@ -50,6 +57,7 @@ class PracticeSession(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     mode: Mapped[str] = mapped_column(String(32))
+    session_type: Mapped[str] = mapped_column(String(32), default="practice")
     total_questions: Mapped[int] = mapped_column(Integer)
     correct_count: Mapped[int] = mapped_column(Integer, default=0)
     started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -117,6 +125,16 @@ class DailyCheckin(Base):
     focus_minutes: Mapped[int] = mapped_column(Integer, default=0)
     tasks_completed: Mapped[int] = mapped_column(Integer, default=0)
     streak: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class UserSetting(Base):
+    __tablename__ = "user_settings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), unique=True, index=True)
+    daily_new_words: Mapped[int] = mapped_column(Integer, default=20)
+    daily_review_limit: Mapped[int] = mapped_column(Integer, default=50)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 class AIChatMessage(Base):
