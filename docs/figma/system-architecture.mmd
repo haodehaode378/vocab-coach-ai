@@ -1,0 +1,11 @@
+﻿flowchart LR
+  U["User"] --> FE["Web App (Next.js)"]
+  FE --> API["API Layer (Route Handlers)"]
+  API --> AUTH["Auth Module"]
+  API --> VOCAB["Vocab Module"]
+  API --> REVIEW["SRS Review Module (SM-2)"]
+  API --> PRACTICE["Practice Module"]
+  API --> COACH["AI Coach Agent"]
+  COACH --> LLM["LLM Provider"]
+  COACH --> TOOLS["Agent Tools\n(search_vocab, get_due_words, make_quiz)"]
+  API --> DB["SQLite/Postgres via Prisma"]

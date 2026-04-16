@@ -1,0 +1,9 @@
+﻿flowchart LR
+  A["Import/Add Words"] --> B["AI Enrich Cards"]
+  B --> C["Daily Plan Generated"]
+  C --> D["Learn New Words"]
+  D --> E["Practice Quiz"]
+  E --> F["Review Due Cards"]
+  F --> G["SM-2 Recalculate next_review_at"]
+  G --> H["Stats Update"]
+  H --> C

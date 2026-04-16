@@ -1,0 +1,7 @@
+﻿flowchart LR
+  U["users"] --> V["vocab_items"]
+  U --> R["review_logs"]
+  U --> P["practice_sessions"]
+  V --> R
+  P --> Q["practice_answers"]
+  V --> Q
