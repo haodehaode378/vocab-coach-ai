@@ -63,7 +63,7 @@ cd vocab-coach-ai
 ### 2. 安装后端依赖 / Backend Setup
 
 ```bash
-cd backend
+cd apps/api
 python -m venv .venv
 
 # Windows
@@ -77,15 +77,15 @@ pip install -r requirements.txt
 ### 3. 安装前端依赖 / Frontend Setup
 
 ```bash
-cd ../frontend
+cd ../web
 npm install
 ```
 
 ### 4. 导入词库（可选）/ Import Vocab (Optional)
 
 ```bash
-cd ../backend
-python scripts/import_words.py CET4luan_2.json CET6_1.json
+cd ../..
+python scripts/import_words.py data/CET4luan_2.json data/CET6_1.json
 ```
 
 ### 5. 启动服务 / Run
@@ -94,21 +94,35 @@ python scripts/import_words.py CET4luan_2.json CET6_1.json
 
 ```bash
 # Terminal 1: Backend
-cd backend
+cd apps/api
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 
 # Terminal 2: Frontend
-cd frontend
+cd apps/web
 npm run dev
 ```
 
 访问 / Open: **http://localhost:5173**
 
+或一键启动（推荐）：
+
+```bash
+python run.py
+```
+
+可选：
+
+```bash
+python run.py --target api
+python run.py --target web
+python run.py --api-port 8000 --web-port 5173
+```
+
 **生产模式 / Production Mode**
 
 ```bash
-cd frontend && npm run build
-cd ../backend && uvicorn app.main:app --host 127.0.0.1 --port 8000
+cd apps/web && npm run build
+cd ../api && uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
 访问 / Open: **http://localhost:8000**
@@ -125,24 +139,25 @@ cd ../backend && uvicorn app.main:app --host 127.0.0.1 --port 8000
 
 ```
 ai-vocab-agent/
-├── backend/              # FastAPI backend
-│   ├── app/
-│   │   ├── main.py
-│   │   ├── models.py
-│   │   ├── routers/      # API routes by module
-│   │   ├── ai_client.py  # AI client wrapper
-│   │   └── ...
-│   ├── data/             # SQLite DB + AI config (gitignored)
-│   └── requirements.txt
-├── frontend/             # Vue3 frontend
-│   ├── src/
-│   │   ├── views/        # Page components
-│   │   ├── components/   # UI components (Comic Style)
-│   │   ├── api/          # Axios wrapper
-│   │   ├── router/
-│   │   ├── stores/
-│   │   └── ...
-│   └── package.json
+├── apps/
+│   ├── api/              # FastAPI backend
+│   │   ├── app/
+│   │   │   ├── core/     # DB/models/services/AI config
+│   │   │   ├── domains/  # learning/productivity/intelligence/system
+│   │   │   ├── main.py
+│   │   │   └── ...
+│   │   └── requirements.txt
+│   └── web/              # Vue3 frontend
+│       ├── src/
+│       │   ├── features/ # business feature pages
+│       │   ├── app/      # router, app-level wiring
+│       │   └── ...
+│       └── package.json
+├── packages/
+│   └── shared/           # Shared types/constants/DTO
+├── data/                 # SQLite DB + AI config + vocab files (gitignored)
+├── scripts/              # Utility scripts
+├── run.py                # One-command local startup
 └── docs/                 # Documentation
 ```
 
@@ -156,10 +171,10 @@ ai-vocab-agent/
 2. 在设置面板中可直接点击「**测试 AI 连接**」，验证模型是否可用。  
 3. 保存后：
    - `Base URL` 和 `Model` 仅缓存在浏览器内存中；
-   - `API Key` 通过加密通道发送到后端，写入 `backend/data/ai_config.json`。
+   - `API Key` 通过加密通道发送到后端，写入 `data/ai_config.json`。
 4. 前端设置面板**不会回显**已保存的 API Key，再次打开时 API Key 输入框为空，留空即保留原值。
 
-> 🛡️ `backend/data/ai_config.json` 与 `backend/data/app.db` 均已加入 `.gitignore`，确保不会进入 Git 仓库。  
+> 🛡️ `data/ai_config.json` 与 `data/app.db` 均已加入 `.gitignore`，确保不会进入 Git 仓库。  
 > Environment variables are also supported: `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`.
 
 ---
@@ -252,7 +267,7 @@ See the [Quick Start](#快速开始--quick-start) section above for installation
 
 ## Privacy
 
-Your API Key is **never** uploaded to GitHub or stored in browser localStorage. It is sent securely to the backend and saved in a local file (`backend/data/ai_config.json`), which is `.gitignore` protected.
+Your API Key is **never** uploaded to GitHub or stored in browser localStorage. It is sent securely to the backend and saved in a local file (`data/ai_config.json`), which is `.gitignore` protected.
 
 ## API
 
