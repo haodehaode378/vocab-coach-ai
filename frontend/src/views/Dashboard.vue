@@ -20,6 +20,8 @@ const dashboard = ref({
   review_trend: [], focus_trend: []
 })
 const progress = ref({ total: 0, new: 0, learning: 0, mastered: 0, familiar: 0 })
+const dashboardError = ref('')
+const progressError = ref('')
 
 onMounted(async () => {
   await loadDashboard()
@@ -27,29 +29,71 @@ onMounted(async () => {
 })
 
 async function loadDashboard() {
-  const { data } = await request.get('/api/stats/dashboard')
-  dashboard.value = data.data
+  dashboardError.value = ''
+  try {
+    const { data } = await request.get('/api/stats/dashboard')
+    dashboard.value = {
+      ...dashboard.value,
+      ...(data?.data || {}),
+    }
+  } catch (e) {
+    dashboardError.value = '统计数据加载失败'
+  }
 }
 
 async function loadProgress() {
   try {
     const { data } = await request.get('/api/study/stats/progress')
-    progress.value = data.data
-  } catch (e) {}
+    progress.value = {
+      ...progress.value,
+      ...(data?.data || {}),
+    }
+  } catch (e) {
+    progressError.value = '学习进度加载失败'
+  }
 }
+
+function safeNumber(value) {
+  const num = Number(value)
+  return Number.isFinite(num) ? num : 0
+}
+
+function normalizeTrend(items, valueKey) {
+  if (!Array.isArray(items)) return []
+  return items.map((item, index) => ({
+    date: item?.date || `${index + 1}`,
+    value: safeNumber(item?.[valueKey]),
+  }))
+}
+
+function buildYAxis(maxValue) {
+  const safeMax = safeNumber(maxValue)
+  return {
+    type: 'value',
+    min: 0,
+    max: safeMax <= 0 ? 5 : Math.ceil(safeMax * 1.2),
+    minInterval: 1,
+    axisLabel: { margin: 12, formatter: value => `${Math.round(value)}` },
+  }
+}
+
+const reviewTrend = computed(() => normalizeTrend(dashboard.value.review_trend, 'count'))
+const focusTrend = computed(() => normalizeTrend(dashboard.value.focus_trend, 'minutes'))
 
 const reviewChartOption = computed(() => ({
   tooltip: { trigger: 'axis' },
-  xAxis: { type: 'category', data: dashboard.value.review_trend.map(i => i.date) },
-  yAxis: { type: 'value' },
-  series: [{ data: dashboard.value.review_trend.map(i => i.count), type: 'line', smooth: true, name: '复习数' }],
+  grid: { left: 64, right: 20, top: 24, bottom: 36, containLabel: true },
+  xAxis: { type: 'category', data: reviewTrend.value.map(i => i.date), boundaryGap: false },
+  yAxis: buildYAxis(Math.max(...reviewTrend.value.map(i => i.value), 0)),
+  series: [{ data: reviewTrend.value.map(i => i.value), type: 'line', smooth: true, name: '复习数' }],
 }))
 
 const focusChartOption = computed(() => ({
   tooltip: { trigger: 'axis' },
-  xAxis: { type: 'category', data: dashboard.value.focus_trend.map(i => i.date) },
-  yAxis: { type: 'value' },
-  series: [{ data: dashboard.value.focus_trend.map(i => i.minutes), type: 'bar', name: '专注分钟' }],
+  grid: { left: 64, right: 20, top: 24, bottom: 36, containLabel: true },
+  xAxis: { type: 'category', data: focusTrend.value.map(i => i.date) },
+  yAxis: buildYAxis(Math.max(...focusTrend.value.map(i => i.value), 0)),
+  series: [{ data: focusTrend.value.map(i => i.value), type: 'bar', name: '专注分钟' }],
 }))
 </script>
 
@@ -131,14 +175,21 @@ const focusChartOption = computed(() => ({
         <template #header>
           <span class="font-black text-lg uppercase tracking-wide">近7天复习趋势</span>
         </template>
-        <v-chart :option="reviewChartOption" class="h-60" />
+        <div v-if="dashboardError" class="mb-2 text-xs font-bold text-red-600">{{ dashboardError }}</div>
+        <div class="w-full overflow-hidden" style="height: 320px;">
+          <v-chart :option="reviewChartOption" class="size-full" style="height: 320px; width: 100%;" />
+        </div>
       </ComicCard>
       <ComicCard>
         <template #header>
           <span class="font-black text-lg uppercase tracking-wide">近7天专注趋势</span>
         </template>
-        <v-chart :option="focusChartOption" class="h-60" />
+        <div v-if="dashboardError" class="mb-2 text-xs font-bold text-red-600">{{ dashboardError }}</div>
+        <div class="w-full overflow-hidden" style="height: 320px;">
+          <v-chart :option="focusChartOption" class="size-full" style="height: 320px; width: 100%;" />
+        </div>
       </ComicCard>
     </div>
+    <div v-if="progressError" class="text-xs font-bold text-red-600">{{ progressError }}</div>
   </div>
 </template>
