@@ -120,7 +120,7 @@ async function startTest() {
 
       <ComicPanel class="mx-auto max-w-3xl">
         <div class="text-center">
-          <div class="font-black text-5xl uppercase tracking-wide text-[#1a1a1a] md:text-7xl">{{ current.word }}</div>
+          <div class="font-black text-5xl lowercase tracking-wide text-[#1a1a1a] md:text-7xl">{{ current.word }}</div>
           <div class="mt-3 font-bold text-lg text-[#1a1a1a]/70">{{ current.phonetic || '' }}</div>
 
           <div v-if="current.is_new" class="mt-8 space-y-3">

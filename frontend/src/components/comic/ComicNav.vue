@@ -1,8 +1,8 @@
 <template>
   <aside class="flex h-full w-16 flex-col border-r-4 border-[#1a1a1a] bg-white md:w-56">
     <div class="flex h-16 items-center justify-center border-b-4 border-[#1a1a1a] px-4 md:justify-start">
-      <span class="hidden font-black text-xl tracking-wider text-[#1a1a1a] md:inline">AI 学习助手</span>
-      <span class="font-black text-xl text-[#1a1a1a] md:hidden">AI</span>
+      <span class="hidden font-black text-xl tracking-wider text-[#1a1a1a] md:inline">AI 英语背词助手</span>
+      <span class="font-black text-xl text-[#1a1a1a] md:hidden">背词</span>
     </div>
     <nav class="flex-1 overflow-y-auto py-4">
       <ul class="space-y-2 px-2 md:px-4">

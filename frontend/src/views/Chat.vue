@@ -9,7 +9,7 @@ import ComicBadge from '../components/comic/ComicBadge.vue'
 
 const store = useAppStore()
 const messages = ref([
-  { role: 'assistant', content: '你好！我是你的 AI 学习助手，有什么可以帮你的吗？' }
+  { role: 'assistant', content: '你好！我是你的 AI 英语背词助手，有什么可以帮你的吗？' }
 ])
 const input = ref('')
 const loading = ref(false)

@@ -127,7 +127,7 @@ async function saveSettings() {
     <div class="flex flex-1 flex-col overflow-hidden">
       <header class="flex h-16 items-center justify-between border-b-4 border-[#1a1a1a] bg-white px-6">
         <h1 class="font-black text-lg uppercase tracking-wide text-[#1a1a1a] md:text-xl">
-          {{ menus.find(m => m.index === route.path)?.title || 'AI 学习助手' }}
+          {{ menus.find(m => m.index === route.path)?.title || 'AI 英语背词助手' }}
         </h1>
         <ComicButton variant="dark" size="sm" @click="openSettings">
           <el-icon class="mr-1"><Setting /></el-icon>
