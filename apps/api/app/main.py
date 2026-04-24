@@ -14,7 +14,7 @@ for p in (PROJECT_ROOT, API_ROOT):
 
 from app.core.database import Base, engine, run_migrations
 from app.domains.intelligence import ai
-from app.domains.learning import books, practice, review, stats, study, vocab
+from app.domains.learning import books, listening, practice, review, stats, study, vocab
 from app.domains.productivity import checkin, focus, tasks
 from app.domains.system import system
 
@@ -41,6 +41,7 @@ def healthz():
 app.include_router(vocab.router)
 app.include_router(review.router)
 app.include_router(practice.router)
+app.include_router(listening.router)
 app.include_router(stats.router)
 app.include_router(books.router)
 

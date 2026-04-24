@@ -6,6 +6,7 @@ const routes = [
   { path: '/study', name: 'Study', component: () => import('../../features/learning/pages/Study.vue') },
   { path: '/review', name: 'Review', component: () => import('../../features/learning/pages/Study.vue') },
   { path: '/practice', name: 'Practice', component: () => import('../../features/learning/pages/Practice.vue') },
+  { path: '/listening', name: 'Listening', component: () => import('../../features/learning/pages/Listening.vue') },
   { path: '/vocab', name: 'Vocab', component: () => import('../../features/learning/pages/Vocab.vue') },
   { path: '/focus', name: 'Focus', component: () => import('../../features/productivity/pages/Focus.vue') },
   { path: '/tasks', name: 'Tasks', component: () => import('../../features/productivity/pages/Tasks.vue') },

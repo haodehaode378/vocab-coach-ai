@@ -58,7 +58,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Run AI Vocab Agent")
     parser.add_argument("--target", choices=["all", "api", "web"], default="all")
     parser.add_argument("--api-host", default="127.0.0.1")
-    parser.add_argument("--api-port", type=int, default=8000)
+    parser.add_argument("--api-port", type=int, default=8001)
     parser.add_argument("--web-host", default="127.0.0.1")
     parser.add_argument("--web-port", type=int, default=5173)
     parser.add_argument("--no-reload", action="store_true", help="Disable API auto reload")

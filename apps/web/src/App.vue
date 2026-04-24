@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore } from './stores/app.js'
@@ -23,6 +23,7 @@ const menus = [
   { index: '/', title: '概览', icon: 'HomeFilled' },
   { index: '/study', title: '今日学习', icon: 'Reading' },
   { index: '/practice', title: '练习', icon: 'EditPen' },
+  { index: '/listening', title: 'Listening', icon: 'Headset' },
   { index: '/progress', title: '进度统计', icon: 'DataLine' },
   { index: '/vocab', title: '词库', icon: 'Collection' },
   { index: '/focus', title: '专注', icon: 'Timer' },
@@ -194,3 +195,5 @@ async function saveSettings() {
     </el-drawer>
   </div>
 </template>
+
+

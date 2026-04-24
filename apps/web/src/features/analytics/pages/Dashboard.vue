@@ -170,6 +170,7 @@ const focusChartOption = computed(() => ({
       <div class="flex flex-wrap gap-3">
         <ComicButton variant="primary" @click="router.push('/study')">开始学习</ComicButton>
         <ComicButton variant="secondary" @click="router.push('/practice')">去练习</ComicButton>
+        <ComicButton variant="dark" @click="router.push('/listening')">听力训练</ComicButton>
         <ComicButton variant="warning" @click="router.push('/focus')">专注计时</ComicButton>
         <ComicButton variant="success" @click="router.push('/tasks')">任务管理</ComicButton>
       </div>
